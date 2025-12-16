@@ -14,6 +14,50 @@ Branches officielles :
 - `viz` → Data Visualisation
 
 ---
+## Installation de Git sous Windows
+
+Git est indispensable pour cloner le dépôt et collaborer en équipe.
+
+1. Télécharger Git
+
+Télécharger Git pour Windows depuis le site officiel :
+https://git-scm.com/download/win
+
+Lancer l’installateur (`.exe`) une fois le téléchargement terminé.
+
+---
+
+2. Options d’installation recommandées
+
+Lors de l’installation, conserver les options par défaut, en particulier :
+
+- Éditeur par défaut : **Use Vim** (ou **Use Visual Studio Code** si installé)
+- PATH : **Git from the command line and also from 3rd-party software**
+- HTTPS transport backend : **OpenSSL**
+- Line ending conversions : **Checkout Windows-style, commit Unix-style**
+- Terminal emulator : **Use MinTTY (default)**
+- Git Pull behavior : **Default (fast-forward or merge)**
+
+Ces options garantissent une compatibilité maximale avec le projet.
+
+---
+
+### 3. Vérifier l’installation
+N'oubliez pas de relancer le terminal utilisé pour être que sûr que **Git** soit bien installé.
+
+Ouvrir **Git Bash**, **PowerShell**,  **Windows Terminal (cmd)** ou **Anaconda Prompt** (préférer l'utilisation de Anaconda Prompt), puis exécuter :
+
+```bash
+git --version
+```
+
+Résultat attendu :
+
+```bash
+git version 2.x.x
+```
+
+---
 
 ## Installation initiale (tous les groupes)
 
@@ -36,6 +80,18 @@ Activation de l’environnement :
 
 ```bash
 conda activate dpe
+```
+
+Après l'activation de l'environnemnent, vous devez avoir sur le terminal le résultat suivant : 
+
+Avant : 
+```bash
+(base) C:\Chemin/de/ton/dossier/IES_DPE
+```
+
+Après : 
+```bash
+(dpe) C:\Chemin/de/ton/dossier/IES_DPE
 ```
 
 ### Installation des requirements
@@ -70,6 +126,18 @@ git branch -a
 ```bash
 git fetch origin
 ```
+
+Résultat attendu dans le terminal : 
+
+```bash
+main
+remotes/origin/HEAD -> origin/main
+remotes/origin/analyse
+remotes/origin/main
+remotes/origin/science
+remotes/origin/viz
+```
+
 2. Créer la branche locale à partir de GitHub
 
 Pour analyse :
