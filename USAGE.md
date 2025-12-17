@@ -61,6 +61,8 @@ git version 2.x.x
 
 ## Installation initiale (tous les groupes)
 
+**Alternative recommandée : Utilisation de GitHub Desktop (interface graphique)**
+
 ```bash
 git clone https://github.com/Gjuuuy/IES_DPE.git
 cd IES_DPE
