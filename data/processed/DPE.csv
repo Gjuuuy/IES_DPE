@@ -1,4 +1,4 @@
-type_batiment,type_installation_chauffage,type_installation_ecs,hauteur_sous_plafond,etiquette_dpe,etiquette_ges,surface_habitable_logement,nombre_niveau_logement,code_postal_ban,qualite_isolation_enveloppe,cout_total_5_usages_energie_n1,conso_5 usages_ef,conso_5_usages_ep,type_energie_principale_chauffage
+type_batiment,type_installation_chauffage,type_installation_ecs,hauteur_sous_plafond,etiquette_dpe,etiquette_ges,surface_habitable_logement,nombre_niveau_logement,code_postal_ban,qualite_isolation_enveloppe,cout_total_5_usages_energie_n1,conso_5_usages_ef,conso_5_usages_ep,type_energie_principale_chauffage
 appartement,collectif,collectif,2.5,D,D,32.0,1.0,75013.0,insuffisante,564.9,7643.1,8248.7,Réseau de Chauffage urbain
 appartement,individuel,individuel,2.5,E,B,74.2,2.0,54160.0,insuffisante,1664.0,9978.0,22949.4,Électricité
 appartement,individuel,individuel,2.8,D,D,38.6,1.0,75007.0,insuffisante,731.0,7969.2,8350.1,Gaz naturel
