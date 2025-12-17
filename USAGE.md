@@ -202,9 +202,9 @@ git push origin analyse   # ou science / viz
 
 Dossiers autorisés :
 
-* `analyse/`
-* `data/processed/`
-* `data/features/`
+* `analyse/` : données brutes (lecture seule)
+* `data/processed/` : données nettoyées
+* `data/features/` : données prêtes pour modèles
 
 Commit type :
 
