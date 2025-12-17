@@ -259,15 +259,15 @@ Format obligatoire :
 [type] description courte
 ```
 
-Types autorisés :
+## Types de commits
 
-* `[EDA]`
-* `[DATA]`
-* `[MODEL]`
-* `[VIZ]`
-* `[FRONT]`
-* `[DOC]`
-* `[FIX]`
+- `[EDA]` : Analyse exploratoire des données (statistiques, distributions, corrélations, visualisations initiales).
+- `[DATA]` : Manipulation des données (nettoyage, transformation, feature engineering, préparation des jeux de données).
+- `[MODEL]` : Développement, entraînement, évaluation ou amélioration des modèles de machine learning.
+- `[VIZ]` : Création ou amélioration des visualisations, graphiques, dashboards et restitutions visuelles.
+- `[FRONT]` : Développement ou modification de l’interface utilisateur (front-end).
+- `[DOC]` : Ajout ou mise à jour de la documentation (README, guides, méthodologie).
+- `[FIX]` : Correction de bugs, erreurs, incohérences ou problèmes techniques.
 
 Exemples :
 
