@@ -59,15 +59,6 @@ git version 2.x.x
 
 ---
 
-## Installation initiale (tous les groupes)
-
-**Alternative recommandée : Utilisation de GitHub Desktop (interface graphique)**
-
-```bash
-git clone https://github.com/Gjuuuy/IES_DPE.git
-cd IES_DPE
-```
-
 ## Installation des dépendances
 
 Ce projet utilise Python 3.10 pour avoir moins de bugs, plus de temps pour le modèle et l’interface.
@@ -103,6 +94,7 @@ Après :
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
+python -m ipykernel install --user --name=dpe
 ```
 
 ### Vérification de l’installation
@@ -112,6 +104,15 @@ pip list
 ```
 
 Les dépendances du projet doivent apparaître dans la liste.
+
+## Installation initiale (tous les groupes)
+
+**Alternative recommandée : Utilisation de GitHub Desktop (interface graphique)**
+
+```bash
+git clone https://github.com/Gjuuuy/IES_DPE.git
+cd IES_DPE
+```
 
 Vérifier les branches :
 
