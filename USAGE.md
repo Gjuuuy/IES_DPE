@@ -59,13 +59,6 @@ git version 2.x.x
 
 ---
 
-## Installation initiale (tous les groupes)
-
-```bash
-git clone https://github.com/Gjuuuy/IES_DPE.git
-cd IES_DPE
-```
-
 ## Installation des dépendances
 
 Ce projet utilise Python 3.10 pour avoir moins de bugs, plus de temps pour le modèle et l’interface.
@@ -101,6 +94,7 @@ Après :
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
+python -m ipykernel install --user --name=dpe
 ```
 
 ### Vérification de l’installation
@@ -110,6 +104,15 @@ pip list
 ```
 
 Les dépendances du projet doivent apparaître dans la liste.
+
+## Installation initiale (tous les groupes)
+
+**Alternative recommandée : Utilisation de GitHub Desktop (interface graphique)**
+
+```bash
+git clone https://github.com/Gjuuuy/IES_DPE.git
+cd IES_DPE
+```
 
 Vérifier les branches :
 
@@ -200,9 +203,9 @@ git push origin analyse   # ou science / viz
 
 Dossiers autorisés :
 
-* `analyse/`
-* `data/processed/`
-* `data/features/`
+* `analyse/` : données brutes (lecture seule)
+* `data/processed/` : données nettoyées
+* `data/features/` : données prêtes pour modèles
 
 Commit type :
 
@@ -259,15 +262,15 @@ Format obligatoire :
 [type] description courte
 ```
 
-Types autorisés :
+## Types de commits
 
-* `[EDA]`
-* `[DATA]`
-* `[MODEL]`
-* `[VIZ]`
-* `[FRONT]`
-* `[DOC]`
-* `[FIX]`
+- `[EDA]` : Analyse exploratoire des données (statistiques, distributions, corrélations, visualisations initiales).
+- `[DATA]` : Manipulation des données (nettoyage, transformation, feature engineering, préparation des jeux de données).
+- `[MODEL]` : Développement, entraînement, évaluation ou amélioration des modèles de machine learning.
+- `[VIZ]` : Création ou amélioration des visualisations, graphiques, dashboards et restitutions visuelles.
+- `[FRONT]` : Développement ou modification de l’interface utilisateur (front-end).
+- `[DOC]` : Ajout ou mise à jour de la documentation (README, guides, méthodologie).
+- `[FIX]` : Correction de bugs, erreurs, incohérences ou problèmes techniques.
 
 Exemples :
 
