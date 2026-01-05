@@ -1,0 +1,18 @@
+{
+    "numerical_features": [
+        "hauteur_sous_plafond",
+        "surface_habitable_logement",
+        "nombre_niveau_logement",
+        "cout_conso",
+        "conso_finale",
+        "conso_primaire"
+    ],
+    "categorical_features": [
+        "type_batiment",
+        "type_installation_chauffage",
+        "type_installation_ecs",
+        "isolation",
+        "type_energie_principale",
+        "code_postal"
+    ]
+}
