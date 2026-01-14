@@ -309,17 +309,6 @@ type_batiment = st.sidebar.selectbox(
     ["Veuillez sélectionner", "Maison", "Appartement"]
 )
 
-st.sidebar.markdown("---")
-st.sidebar.header("DPE/GES actuels (optionnel)")
-dpe_actuel = st.sidebar.selectbox(
-    "Étiquette DPE actuelle",
-    ["Non renseignée", "A", "B", "C", "D", "E", "F", "G"]
-)
-ges_actuel = st.sidebar.selectbox(
-    "Étiquette GES actuelle",
-    ["Non renseignée", "A", "B", "C", "D", "E", "F", "G"]
-)
-
 tab1, tab2 = st.tabs(["Informations du logement", "Scénarios de rénovation"])
 
 # Tab 1 : Profil et prédiction
@@ -395,8 +384,6 @@ with tab1:
             'isolation_murs': isolation_murs,
             'isolation_sous_sol': isolation_sous_sol,
             'type_fenetres': type_fenetres,
-            'dpe_actuel': dpe_actuel,
-            'ges_actuel': ges_actuel,
             'annee_construction': 1990,
             'type_logement': type_batiment.lower() if type_batiment else 'maison',
             'zone_climatique': 'H2' if code_postal.startswith(('49','53','72')) else 'H1'
@@ -430,12 +417,12 @@ with tab1:
                 st.metric("Coût annuel estimé", f"{cout_annuel:,.0f} €/an")
             
             with col4:
-                st.metric("Classe DPE", classe_dpe)
+                st.metric("Classe DPE prédite", classe_dpe)
 
             col_center1, col_center2, col_center3 = st.columns([1, 2, 1])
             with col_center2:
                 predicteur = DPEVisualizer()
-                st.pyplot(visualiser_dpe(conso_kwh_m2, predicteur, "Classe Énergétique Prédite"))
+                st.pyplot(visualiser_dpe(conso_kwh_m2, predicteur, "Classe énergétique estimé en fonction de la consommation"))
 
         except Exception as e:
             st.error(f"Erreur lors de la prédiction : {str(e)}")
@@ -625,7 +612,7 @@ with tab2:
                 
                 with col4:
                     st.metric(
-                        "Classe DPE",
+                        "Classe DPE prédite",
                         classe_apres,
                         f"{classe_initiale} → {classe_apres}"
                     )
