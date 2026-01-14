@@ -29,7 +29,7 @@ DEFAULT_VALUES = {
     'cout_conso': 1200.0,
 }
 
-# Classe visualisation DPE (issue du dernier code fourni)
+# Classe visualisation DPE
 class DPEVisualizer:
     def __init__(self):
         self.classes_dpe = {
@@ -48,16 +48,17 @@ class DPEVisualizer:
                 return classe
         return 'G'
 
-# Chargement des modèles (gardé tel quel)
+# Chargement des modèles
 @st.cache_resource
 def load_models():
-    try:
-        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # remonte à la racine du projet
-        MODEL_DIR = os.path.join(BASE_DIR, 'science', 'models')
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    MODEL_DIR = os.path.join(BASE_DIR, 'science', 'models')
 
+    try:
         reg = joblib.load(os.path.join(MODEL_DIR, 'dpe_Regression_xgb.joblib'))
         clf = joblib.load(os.path.join(MODEL_DIR, 'dpe_classification_xgb.joblib'))
-        with open('../science/models/feature_columns.json', 'r') as f:
+
+        with open(os.path.join(MODEL_DIR, 'feature_columns.json'), 'r') as f:
             feats = json.load(f)
         return reg, clf, feats
     except Exception as e:
@@ -70,80 +71,152 @@ numerical   = feature_data.get('numerical_features', [])
 categorical = feature_data.get('categorical_features', [])
 all_features = numerical + categorical
 
-features_reg = [f for f in all_features if f not in {'conso_finale'}]
-features_clf = [f for f in all_features if f not in {'etiquette_dpe', 'etiquette_ges', 'conso_finale'}]
+# CORRECTION: Enlever 'conso_finale' des features de régression
+features_reg = [f for f in all_features if f not in {'conso_finale', 'etiquette_dpe', 'etiquette_ges'}]
 
-# Fonction de préparation des features (gardée)
+# CORRECTION: Pour la classification, on enlève les étiquettes mais on GARDE conso_finale
+features_clf_base = [f for f in all_features if f not in {'etiquette_dpe', 'etiquette_ges'}]
+
+# Fonction de préparation des features CORRIGÉE
 def prepare_features(inputs_dict, model_type="regression", predicted_conso=None):
     d = inputs_dict.copy()
 
+    # Mappings de base
     d.setdefault('surface_habitable_logement', d.get('surface', 80))
     d.setdefault('nombre_niveau_logement', 1 if d.get('type_logement') in ['Appartement', 'appartement'] else 2)
     d.setdefault('hauteur_sous_plafond', 2.5)
     d.setdefault('code_postal', '75000')
 
+    # Mapping type_energie_principale
     if 'type_energie_principale' not in d:
-        ch = d.get('type_chauffage', 'Electrique')
+        ch = d.get('energie_chauffage', d.get('type_chauffage', 'Electrique'))
         mapping = {
+            'Électricité': 'Électricité',
             'Electrique': 'Électricité',
+            'Gaz naturel': 'Gaz naturel',
             'Gaz': 'Gaz naturel',
             'Fioul': 'Fioul domestique',
+            'Bois': 'Bois',
+            'Pompe à chaleur': 'Électricité',
+            'Réseau de chaleur': 'Réseau de chaleur',
             'Collectif': 'Gaz naturel',
             'Individuel': 'Électricité'
         }
         d['type_energie_principale'] = mapping.get(ch, 'Électricité')
 
+    # Isolation
     if 'isolation' not in d:
         an = d.get('annee_construction', 1990)
-        iso = d.get('isolation_murs', 0)
-        d['isolation'] = 'Bonne' if an >= 2012 or iso == 1 else 'Moyenne' if an >= 1990 else 'Faible'
+        qual_iso = d.get('qualite_isolation', '')
+        
+        # Mapping de qualite_isolation vers isolation
+        iso_mapping = {
+            'Très bonne': 'Bonne',
+            'Bonne': 'Bonne',
+            'Moyenne': 'Moyenne',
+            'Insuffisante': 'Faible'
+        }
+        
+        if qual_iso in iso_mapping:
+            d['isolation'] = iso_mapping[qual_iso]
+        else:
+            # Sinon on se base sur l'année
+            d['isolation'] = 'Bonne' if an >= 2012 else 'Moyenne' if an >= 1990 else 'Faible'
 
-    d.setdefault('type_batiment', "immeuble collectif d'habitation" if 'Appartement' in d.get('type_logement', '') else 'maison')
-    d.setdefault('type_installation_chauffage', 'chauffage collectif' if 'Collectif' in d.get('type_chauffage', '') else 'chauffage individuel')
-    d.setdefault('type_installation_ecs', 'production ECS collective' if 'Collectif' in d.get('type_chauffage', '') else 'production ECS individuelle')
+    # Type de bâtiment
+    type_log = d.get('type_logement', d.get('type_batiment', ''))
+    if 'Appartement' in type_log or 'appartement' in type_log:
+        d['type_batiment'] = "immeuble collectif d'habitation"
+    else:
+        d['type_batiment'] = 'maison'
 
+    # Installation chauffage
+    type_chauf = d.get('type_chauffage', 'Individuel')
+    if 'Collectif' in type_chauf or 'collectif' in type_chauf:
+        d['type_installation_chauffage'] = 'chauffage collectif'
+    else:
+        d['type_installation_chauffage'] = 'chauffage individuel'
+
+    # Installation ECS
+    type_ecs_input = d.get('type_ecs', '')
+    if 'collectif' in type_ecs_input.lower() or 'Collectif' in type_chauf:
+        d['type_installation_ecs'] = 'production ECS collective'
+    else:
+        d['type_installation_ecs'] = 'production ECS individuelle'
+
+    # Création du DataFrame
     df = pd.DataFrame([d])
 
+    # CORRECTION MAJEURE: Gestion différente selon le type de modèle
     if model_type == "regression":
         required = features_reg
-    else:
-        required = features_clf + (['conso_finale'] if predicted_conso is not None else [])
-
-    for col in required:
-        if col not in df.columns:
-            df[col] = DEFAULT_VALUES.get(col, 0 if col in numerical else 'Inconnu')
-
-    if model_type == "classification" and predicted_conso is not None:
-        df['conso_finale'] = predicted_conso
-
-    if model_type == "classification":
-        for cible in ['etiquette_dpe', 'etiquette_ges']:
-            if cible in df.columns:
-                df = df.drop(columns=[cible], errors='ignore')
-
-    if model_type == "regression":
+        # Pour la régression, on n'ajoute PAS conso_finale
+        for col in required:
+            if col not in df.columns:
+                df[col] = DEFAULT_VALUES.get(col, 0 if col in numerical else 'Inconnu')
+        
+        # On garde uniquement les colonnes de features_reg
         present_cols = [c for c in features_reg if c in df.columns]
         df = df[present_cols]
-    else:
-        cols = [c for c in features_clf if c != 'conso_finale'] + ['conso_finale']
-        present_cols = [c for c in cols if c in df.columns]
-        df = df[present_cols]
+        
+    else:  # classification
+        # Pour la classification, on DOIT inclure conso_finale
+        required = features_clf_base
+        
+        for col in required:
+            if col not in df.columns:
+                if col == 'conso_finale' and predicted_conso is not None:
+                    df[col] = predicted_conso
+                else:
+                    df[col] = DEFAULT_VALUES.get(col, 0 if col in numerical else 'Inconnu')
+        
+        # S'assurer que conso_finale est bien présente
+        if 'conso_finale' not in df.columns and predicted_conso is not None:
+            df['conso_finale'] = predicted_conso
+        
+        # Ordre des colonnes: on met conso_finale à la fin
+        cols_order = [c for c in features_clf_base if c != 'conso_finale' and c in df.columns]
+        if 'conso_finale' in df.columns:
+            cols_order.append('conso_finale')
+        
+        df = df[cols_order]
 
     return df
 
-# Fonction de prédiction (gardée)
-def predict_conso_and_dpe(inputs_dict):
+# Fonction de prédiction AVEC DEBUG
+def predict_conso_and_dpe(inputs_dict, debug=False):
+    # Étape 1: Prédiction de la consommation
     X_reg = prepare_features(inputs_dict, "regression")
+    
+    if debug:
+        st.write("### DEBUG - Features pour régression:")
+        st.dataframe(X_reg)
+    
     conso = float(model_regression.predict(X_reg)[0])
+    
+    if debug:
+        st.write(f"### DEBUG - Consommation prédite: {conso:.2f} kWh/m²/an")
 
+    # Étape 2: Prédiction du DPE avec la consommation
     X_clf = prepare_features(inputs_dict, "classification", predicted_conso=conso)
+    
+    if debug:
+        st.write("### DEBUG - Features pour classification:")
+        st.dataframe(X_clf)
+        st.write(f"Colonnes: {list(X_clf.columns)}")
+        st.write(f"Valeur conso_finale: {X_clf['conso_finale'].values[0] if 'conso_finale' in X_clf.columns else 'MANQUANTE!'}")
+    
     idx = int(model_classification.predict(X_clf)[0])
+    
+    if debug:
+        st.write(f"### DEBUG - Index prédit: {idx}")
+    
     classes = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
     dpe = classes[idx] if 0 <= idx < len(classes) else 'G'
 
     return conso, dpe
 
-# Visualisation DPE issue du code fourni
+# Visualisation DPE
 def visualiser_dpe(conso_kwh_m2_an, predicteur, titre="Classe Énergétique"):
     classe = predicteur.calculer_classe_dpe(conso_kwh_m2_an)
     
@@ -197,16 +270,19 @@ def visualiser_dpe(conso_kwh_m2_an, predicteur, titre="Classe Énergétique"):
     return fig
 
 # ────────────────────────────────────────────────
-# INTERFACE – partie frontend mise à jour
+# INTERFACE
 # ────────────────────────────────────────────────
 
 st.title("Prédiction de Consommation Énergétique")
 st.markdown("Prédisez votre consommation et simulez l'impact de travaux de rénovation")
 st.markdown("---")
 
+# MODE DEBUG (ajout d'une checkbox en sidebar)
+debug_mode = st.sidebar.checkbox("Mode Debug", value=False)
+
 # Sidebar
 st.sidebar.header("Localisation")
-code_postal = st.sidebar.text_input("Code postal", "0", max_chars=5)
+code_postal = st.sidebar.text_input("Code postal", "75000", max_chars=5)
 ville = st.sidebar.text_input("Ville", placeholder="Veuillez saisir la ville")
 
 st.sidebar.markdown("---")
@@ -236,13 +312,13 @@ with tab1:
     col1, col2 = st.columns(2)
     
     with col1:
-        surface = st.number_input("Surface habitable (m²)", min_value=0, max_value=500, value=0)
+        surface = st.number_input("Surface habitable (m²)", min_value=10, max_value=500, value=100)
         nombre_niveaux = st.number_input("Nombre de niveaux", min_value=1, max_value=5, 
                                          value=1 if type_batiment == "Appartement" else 2)
     
     with col2:
         hauteur_sous_plafond = st.number_input("Hauteur sous plafond (m)", 
-                                               min_value=0.0, max_value=4.0, value=0.0, step=0.1)
+                                               min_value=2.0, max_value=4.0, value=2.5, step=0.1)
         type_chauffage = st.selectbox("Type installation chauffage", ["Veuillez sélectionner","Individuel", "Collectif"])
     
     st.markdown("---")
@@ -304,14 +380,13 @@ with tab1:
             'type_fenetres': type_fenetres,
             'dpe_actuel': dpe_actuel,
             'ges_actuel': ges_actuel,
-            # Champs attendus par les modèles réels
-            'annee_construction': 1990,           # valeur par défaut raisonnable
+            'annee_construction': 1990,
             'type_logement': type_batiment.lower() if type_batiment else 'maison',
             'zone_climatique': 'H2' if code_postal.startswith(('49','53','72')) else 'H1'
         }
 
         try:
-            conso_kwh_m2, classe_dpe = predict_conso_and_dpe(profil)
+            conso_kwh_m2, classe_dpe = predict_conso_and_dpe(profil, debug=debug_mode)
             conso_annuelle = conso_kwh_m2 * surface
 
             st.session_state.profil_initial = profil.copy()
@@ -347,8 +422,10 @@ with tab1:
 
         except Exception as e:
             st.error(f"Erreur lors de la prédiction : {str(e)}")
+            if debug_mode:
+                st.exception(e)
 
-# Tab 2 : Scénarios de rénovation (copie quasi-intégrale du code fourni)
+# Tab 2 : Scénarios de rénovation
 with tab2:
     if not st.session_state.get("prediction_faite", False):
         st.warning("Veuillez d'abord effectuer une prédiction dans l'onglet 'Informations du logement'")
@@ -359,7 +436,7 @@ with tab2:
         profil_initial = st.session_state.profil_initial.copy()
         profil_scenario = profil_initial.copy()
         
-        # Scénario 1 : Agrandissement (maisons uniquement)
+        # Scénario 1 : Agrandissement
         if profil_initial.get('type_batiment') == "Maison":
             with st.expander("Scénario 1 : Agrandissement (maisons uniquement)", expanded=False):
                 scenario_1_actif = st.checkbox("Activer ce scénario", key="sc1")
@@ -378,7 +455,6 @@ with tab2:
                             key="new_surface"
                         )
                         profil_scenario['surface'] = nouvelle_surface
-                        profil_scenario['surface_habitable_logement'] = nouvelle_surface
                     
                     with col2:
                         nouveau_nb_niveaux = st.number_input(
@@ -389,7 +465,6 @@ with tab2:
                             key="new_niveaux"
                         )
                         profil_scenario['nombre_niveaux'] = nouveau_nb_niveaux
-                        profil_scenario['nombre_niveau_logement'] = nouveau_nb_niveaux
                     
                     with col3:
                         nouvelle_hauteur = st.number_input(
@@ -417,7 +492,6 @@ with tab2:
                     key="new_ecs"
                 )
                 profil_scenario['type_ecs'] = nouveau_ecs
-                profil_scenario['type_installation_ecs'] = 'production ECS individuelle' if 'individuel' in nouveau_ecs.lower() else 'production ECS collective'
         
         # Scénario 3 : Amélioration isolation
         with st.expander("Scénario 3 : Amélioration de l'isolation de l'enveloppe", expanded=False):
@@ -437,7 +511,6 @@ with tab2:
                     key="new_isolation"
                 )
                 profil_scenario['qualite_isolation'] = nouvelle_isolation
-                profil_scenario['isolation'] = nouvelle_isolation
         
         # Scénario 4 : Amélioration chauffage
         with st.expander("Scénario 4 : Amélioration du système de chauffage", expanded=False):
@@ -457,7 +530,6 @@ with tab2:
                     )
                     if nouveau_type_chauffage != "Pas de modification":
                         profil_scenario['type_chauffage'] = nouveau_type_chauffage
-                        profil_scenario['type_installation_chauffage'] = 'chauffage individuel' if nouveau_type_chauffage == 'Individuel' else 'chauffage collectif'
                 
                 with col2:
                     nouvelle_energie = st.selectbox(
@@ -468,7 +540,6 @@ with tab2:
                     )
                     if nouvelle_energie != "Pas de modification":
                         profil_scenario['energie_chauffage'] = nouvelle_energie
-                        profil_scenario['type_energie_principale'] = nouvelle_energie
         
         st.markdown("---")
         
@@ -491,8 +562,7 @@ with tab2:
             if not scenarios_actifs:
                 st.warning("Veuillez activer au moins un scénario de rénovation")
             else:
-                # Utilisation des modèles ML pour recalculer la consommation et le DPE après rénovation
-                conso_apres_kwh_m2, classe_apres = predict_conso_and_dpe(profil_scenario)
+                conso_apres_kwh_m2, classe_apres = predict_conso_and_dpe(profil_scenario, debug=debug_mode)
                 conso_apres = conso_apres_kwh_m2 * profil_scenario['surface']
 
                 conso_initiale = st.session_state.conso_annuelle_initiale
