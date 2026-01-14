@@ -13,6 +13,8 @@
         "type_installation_ecs",
         "isolation",
         "type_energie_principale",
-        "code_postal"
+        "code_postal",
+        "etiquette_dpe",
+        "etiquette_ges"
     ]
 }
