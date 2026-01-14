@@ -55,7 +55,7 @@ def load_models():
     MODEL_DIR = os.path.join(BASE_DIR, 'science', 'models')
 
     try:
-        reg = joblib.load(os.path.join(MODEL_DIR, 'dpe_Regression_xgb.joblib'))
+        reg = joblib.load(os.path.join(MODEL_DIR, 'dpe_regression_xgb.joblib'))
         clf = joblib.load(os.path.join(MODEL_DIR, 'dpe_classification_xgb.joblib'))
 
         with open(os.path.join(MODEL_DIR, 'feature_columns.json'), 'r') as f:
