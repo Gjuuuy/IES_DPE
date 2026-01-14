@@ -71,8 +71,8 @@ numerical   = feature_data.get('numerical_features', [])
 categorical = feature_data.get('categorical_features', [])
 all_features = numerical + categorical
 
-# CORRECTION: Enlever 'conso_finale' des features de régression
-features_reg = [f for f in all_features if f not in {'conso_finale', 'etiquette_dpe', 'etiquette_ges'}]
+# CORRECTION: Pour la régression, on garde les étiquettes mais pas conso_finale
+features_reg = [f for f in all_features if f not in {'conso_finale'}]
 
 # CORRECTION: Pour la classification, on enlève les étiquettes mais on GARDE conso_finale
 features_clf_base = [f for f in all_features if f not in {'etiquette_dpe', 'etiquette_ges'}]
@@ -150,7 +150,7 @@ def prepare_features(inputs_dict, model_type="regression", predicted_conso=None)
     # CORRECTION MAJEURE: Gestion différente selon le type de modèle
     if model_type == "regression":
         required = features_reg
-        # Pour la régression, on n'ajoute PAS conso_finale
+        # Pour la régression, on garde etiquette_dpe et etiquette_ges
         for col in required:
             if col not in df.columns:
                 df[col] = DEFAULT_VALUES.get(col, 0 if col in numerical else 'Inconnu')
@@ -192,10 +192,27 @@ def predict_conso_and_dpe(inputs_dict, debug=False):
         st.write("### DEBUG - Features pour régression:")
         st.dataframe(X_reg)
     
-    conso = float(model_regression.predict(X_reg)[0])
+    conso_raw = float(model_regression.predict(X_reg)[0])
     
-    if debug:
-        st.write(f"### DEBUG - Consommation prédite: {conso:.2f} kWh/m²/an")
+    # VÉRIFICATION CRITIQUE : Le modèle prédit-il la conso totale ou au m² ?
+    surface = inputs_dict.get('surface', inputs_dict.get('surface_habitable_logement', 100))
+    
+    # Si la valeur prédite est > 1000, c'est probablement la conso TOTALE
+    if conso_raw > 1000:
+        # Le modèle prédit la consommation totale en kWh/an
+        conso_totale = conso_raw
+        conso = conso_raw / surface  # On calcule le kWh/m²/an
+        if debug:
+            st.write(f"### DEBUG - Le modèle prédit la CONSOMMATION TOTALE")
+            st.write(f"- Consommation totale prédite: {conso_totale:.2f} kWh/an")
+            st.write(f"- Surface: {surface} m²")
+            st.write(f"- Consommation au m²: {conso:.2f} kWh/m²/an")
+    else:
+        # Le modèle prédit directement le kWh/m²/an
+        conso = conso_raw
+        if debug:
+            st.write(f"### DEBUG - Le modèle prédit la CONSOMMATION AU M²")
+            st.write(f"- Consommation prédite: {conso:.2f} kWh/m²/an")
 
     # Étape 2: Prédiction du DPE avec la consommation
     X_clf = prepare_features(inputs_dict, "classification", predicted_conso=conso)
