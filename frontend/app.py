@@ -46,8 +46,20 @@ class DPEVisualizer:
 # CHARGEMENT DES MODÈLES
 # ===================================
 try:
-    model_classification = joblib.load('../science/models/dpe_classification_xgb.joblib')
-    # model_regression = joblib.load('../science/models/conso_regression_xgb.joblib')
+    # Charger les modèles
+    model_data_classification = joblib.load('../science/models/dpe_classification_xgb.joblib')
+    model_data_regression = joblib.load('../science/models/dpe_Regression_xgb.joblib')
+    
+    # Gérer le cas où joblib charge un dict ou directement le modèle
+    if isinstance(model_data_classification, dict):
+        model_classification = model_data_classification.get('model', model_data_classification)
+    else:
+        model_classification = model_data_classification
+    
+    if isinstance(model_data_regression, dict):
+        model_regression = model_data_regression.get('model', model_data_regression)
+    else:
+        model_regression = model_data_regression
     
     with open('../science/models/feature_columns.json', 'r') as f:
         feature_columns_data = json.load(f)
@@ -65,6 +77,9 @@ try:
         
 except FileNotFoundError as e:
     st.error(f"Erreur de chargement : {e}. Vérifiez les chemins des modèles.")
+    st.stop()
+except Exception as e:
+    st.error(f"Erreur lors du chargement des modèles : {e}")
     st.stop()
 
 # ===================================
@@ -200,10 +215,7 @@ def prepare_features(inputs_dict):
     
     # Créer le DataFrame avec TOUTES les colonnes enrichies
     df = pd.DataFrame([enriched_inputs])
-    
-    # NE PAS encoder les colonnes catégorielles - le modèle les attend telles quelles
-    # car il gère l'encodage en interne (XGBoost peut gérer les catégorielles directement)
-    
+
     # Créer un DataFrame avec seulement les colonnes attendues
     df_final = pd.DataFrame(index=[0])
     
@@ -221,28 +233,14 @@ def prepare_features(inputs_dict):
 # PIPELINE DE PRÉDICTION
 # ===================================
 def predict_conso_and_dpe(features_df):
-    # Prédire la consommation (régression) - à implémenter
-    # conso_kwh_m2_an = model_regression.predict(features_df)[0]
+    # Prédire la consommation (régression)
+    conso_kwh_m2_an = model_regression.predict(features_df)[0]
     
-    # Pour l'instant, utiliser une valeur par défaut basée sur la classe DPE
-    dpe_pred_idx = model_classification.predict(features_df)[0]
-    
-    # Mapper l'index vers la classe DPE
-    # Si le modèle retourne un entier (0-6), le convertir en lettre (A-G)
-    if isinstance(dpe_pred_idx, (int, np.integer)):
-        dpe_classes = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
-        if 0 <= dpe_pred_idx < len(dpe_classes):
-            dpe_pred = dpe_classes[dpe_pred_idx]
-        else:
-            dpe_pred = 'G'  # Par défaut si index invalide
-    else:
-        dpe_pred = str(dpe_pred_idx)
-    
-    # Estimation approximative de la consommation basée sur la classe DPE
+    # Déduire la classe DPE à partir de la consommation prédite
     dpe_viz = DPEVisualizer()
-    conso_estimate = (dpe_viz.classes[dpe_pred]['min'] + dpe_viz.classes[dpe_pred]['max']) / 2
+    dpe_pred = dpe_viz.get_class_from_conso(conso_kwh_m2_an)
     
-    return conso_estimate, dpe_pred
+    return conso_kwh_m2_an, dpe_pred
 
 # ===================================
 # SIMULATION RÉNOVATION
