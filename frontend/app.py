@@ -1,6 +1,7 @@
 import streamlit as st
 import joblib
 import json
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -51,8 +52,11 @@ class DPEVisualizer:
 @st.cache_resource
 def load_models():
     try:
-        reg = joblib.load('../science/models/dpe_Regression_xgb.joblib')
-        clf = joblib.load('../science/models/dpe_classification_xgb.joblib')
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # remonte à la racine du projet
+        MODEL_DIR = os.path.join(BASE_DIR, 'science', 'models')
+
+        reg = joblib.load(os.path.join(MODEL_DIR, 'dpe_Regression_xgb.joblib'))
+        clf = joblib.load(os.path.join(MODEL_DIR, 'dpe_classification_xgb.joblib'))
         with open('../science/models/feature_columns.json', 'r') as f:
             feats = json.load(f)
         return reg, clf, feats
