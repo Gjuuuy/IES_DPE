@@ -29,6 +29,10 @@ DEFAULT_VALUES = {
     'cout_conso': 1200.0,
 }
 
+def add_help_circle(help_text):
+    with st.popover("ⓘ", help="Cliquez pour plus d'informations", use_container_width=False):
+        st.markdown(help_text)
+
 # Classe visualisation DPE
 class DPEVisualizer:
     def __init__(self):
@@ -309,6 +313,17 @@ type_batiment = st.sidebar.selectbox(
     ["Veuillez sélectionner", "Maison", "Appartement"]
 )
 
+st.sidebar.markdown("---")
+st.sidebar.header("DPE/GES actuels (optionnel)")
+dpe_actuel = st.sidebar.selectbox(
+    "Étiquette DPE actuelle",
+    ["Non renseignée", "A", "B", "C", "D", "E", "F", "G"]
+)
+ges_actuel = st.sidebar.selectbox(
+    "Étiquette GES actuelle",
+    ["Non renseignée", "A", "B", "C", "D", "E", "F", "G"]
+)
+
 tab1, tab2 = st.tabs(["Informations du logement", "Scénarios de rénovation"])
 
 # Tab 1 : Profil et prédiction
@@ -319,12 +334,37 @@ with tab1:
     
     with col1:
         surface = st.number_input("Surface habitable (m²)", min_value=10, max_value=500, value=100)
-        nombre_niveaux = st.number_input("Nombre de niveaux", min_value=1, max_value=5, 
-                                         value=1 if type_batiment == "Appartement" else 2)
-    
+        
+        # ─── CHAMP MODIFIÉ ───
+        col_label, col_help = st.columns([95, 5], gap="small")
+        with col_label:
+            nombre_niveaux = st.number_input(
+                "Nombre de niveaux", 
+                min_value=1, max_value=5, 
+                value=1 if type_batiment == "Appartement" else 2
+            )
+        with col_help:
+            add_help_circle(
+                "Nombre total de niveaux habitables (rez-de-chaussée inclus).\n\n"
+                "• Appartement → généralement **1**\n"
+                "• Maison → souvent **2** ou plus selon la configuration"
+            )
+
     with col2:
-        hauteur_sous_plafond = st.number_input("Hauteur sous plafond (m)", 
-                                               min_value=2.0, max_value=4.0, value=2.5, step=0.1)
+        # ─── CHAMP MODIFIÉ ───
+        col_label, col_help = st.columns([95, 5], gap="small")
+        with col_label:
+            hauteur_sous_plafond = st.number_input(
+                "Hauteur sous plafond (m)", 
+                min_value=2.0, max_value=4.0, value=2.5, step=0.1
+            )
+        with col_help:
+            add_help_circle(
+                "Hauteur moyenne mesurée du sol fini au plafond fini.\n\n"
+                "Valeur la plus courante en France : **2,50 m**\n\n"
+                "Impact : plus la hauteur est élevée, plus le volume à chauffer augmente."
+            )
+
         type_chauffage = st.selectbox("Type installation chauffage", ["Veuillez sélectionner","Individuel", "Collectif"])
     
     st.markdown("---")
@@ -338,16 +378,39 @@ with tab1:
             ["Veuillez sélectionner","Électricité", "Gaz naturel", "Fioul", "Bois", "Pompe à chaleur", "Réseau de chaleur"]
         )
         
-        type_ecs = st.selectbox(
-            "Type installation eau chaude sanitaire (ECS)",
-            ["Veuillez sélectionner","Ballon électrique", "Chaudière", "Chauffe-eau thermodynamique", 
-             "Chauffe-eau solaire", "Instantané gaz"]
-        )
+        # ─── CHAMP MODIFIÉ ───
+        col_label, col_help = st.columns([95, 5], gap="small")
+        with col_label:
+            type_ecs = st.selectbox(
+                "Type installation eau chaude sanitaire (ECS)",
+                ["Veuillez sélectionner","Ballon électrique", "Chaudière", "Chauffe-eau thermodynamique", 
+                 "Chauffe-eau solaire", "Instantané gaz"]
+            )
+        with col_help:
+            add_help_circle(
+                "Système qui produit l'eau chaude sanitaire pour la cuisine et la salle de bain.\n\n"
+                "Ordre de performance (du moins au plus efficace) :\n"
+                "• Ballon électrique\n"
+                "• Instantané gaz / chaudière\n"
+                "• Chauffe-eau thermodynamique\n"
+                "• Chauffe-eau solaire"
+            )
         
-        qualite_isolation = st.selectbox(
-            "Qualité isolation générale",
-            ["Veuillez sélectionner","Insuffisante", "Moyenne", "Bonne", "Très bonne"]
-        )
+        # ─── CHAMP MODIFIÉ ───
+        col_label, col_help = st.columns([95, 5], gap="small")
+        with col_label:
+            qualite_isolation = st.selectbox(
+                "Qualité isolation générale",
+                ["Veuillez sélectionner","Insuffisante", "Moyenne", "Bonne", "Très bonne"]
+            )
+        with col_help:
+            add_help_circle(
+                "Appréciation globale de l'isolation thermique de l'enveloppe du logement :\n"
+                "• **Insuffisante** : absence ou très faible isolation\n"
+                "• **Moyenne** : isolation partielle (années 80-2000)\n"
+                "• **Bonne** : RT 2005 / 2012\n"
+                "• **Très bonne** : niveau BBC / RE 2020 ou rénovation lourde"
+            )
     
     with col2:
         isolation_murs = st.selectbox(
@@ -384,6 +447,8 @@ with tab1:
             'isolation_murs': isolation_murs,
             'isolation_sous_sol': isolation_sous_sol,
             'type_fenetres': type_fenetres,
+            'dpe_actuel': dpe_actuel,
+            'ges_actuel': ges_actuel,
             'annee_construction': 1990,
             'type_logement': type_batiment.lower() if type_batiment else 'maison',
             'zone_climatique': 'H2' if code_postal.startswith(('49','53','72')) else 'H1'
@@ -417,12 +482,12 @@ with tab1:
                 st.metric("Coût annuel estimé", f"{cout_annuel:,.0f} €/an")
             
             with col4:
-                st.metric("Classe DPE prédite", classe_dpe)
+                st.metric("Classe DPE", classe_dpe)
 
             col_center1, col_center2, col_center3 = st.columns([1, 2, 1])
             with col_center2:
                 predicteur = DPEVisualizer()
-                st.pyplot(visualiser_dpe(conso_kwh_m2, predicteur, "Classe énergétique estimé en fonction de la consommation"))
+                st.pyplot(visualiser_dpe(conso_kwh_m2, predicteur, "Classe Énergétique Prédite"))
 
         except Exception as e:
             st.error(f"Erreur lors de la prédiction : {str(e)}")
@@ -612,7 +677,7 @@ with tab2:
                 
                 with col4:
                     st.metric(
-                        "Classe DPE prédite",
+                        "Classe DPE",
                         classe_apres,
                         f"{classe_initiale} → {classe_apres}"
                     )
