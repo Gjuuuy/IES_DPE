@@ -313,17 +313,6 @@ type_batiment = st.sidebar.selectbox(
     ["Veuillez sélectionner", "Maison", "Appartement"]
 )
 
-st.sidebar.markdown("---")
-st.sidebar.header("DPE/GES actuels (optionnel)")
-dpe_actuel = st.sidebar.selectbox(
-    "Étiquette DPE actuelle",
-    ["Non renseignée", "A", "B", "C", "D", "E", "F", "G"]
-)
-ges_actuel = st.sidebar.selectbox(
-    "Étiquette GES actuelle",
-    ["Non renseignée", "A", "B", "C", "D", "E", "F", "G"]
-)
-
 tab1, tab2 = st.tabs(["Informations du logement", "Scénarios de rénovation"])
 
 # Tab 1 : Profil et prédiction
