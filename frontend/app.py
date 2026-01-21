@@ -436,8 +436,6 @@ with tab1:
             'isolation_murs': isolation_murs,
             'isolation_sous_sol': isolation_sous_sol,
             'type_fenetres': type_fenetres,
-            'dpe_actuel': dpe_actuel,
-            'ges_actuel': ges_actuel,
             'annee_construction': 1990,
             'type_logement': type_batiment.lower() if type_batiment else 'maison',
             'zone_climatique': 'H2' if code_postal.startswith(('49','53','72')) else 'H1'
